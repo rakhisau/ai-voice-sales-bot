@@ -129,11 +129,13 @@ export function buildAssistant() {
       tools: [{ type: "endCall" }],
     },
     voice: { provider: "vapi", voiceId: "Emma", version: "2", language: "auto" },
-    // Soniox auto-detects the language (good for Indian English / Hinglish); the vocabulary
+    // Soniox handles Indian English / Hinglish well; the vocabulary
     // boosts words that were being misheard.
     transcriber: {
       provider: "soniox",
       model: "stt-rt-v5",
+      // Hint English (plus Hindi for Hinglish) so short first replies are not mis-detected.
+      languages: ["en", "hi"],
       customVocabulary: ["FlowDesk", "Gmail", "at the rate", "dot com", "CRM", "WhatsApp", "demo", "free trial"],
     },
     // Wait for the customer to actually finish their sentence before replying.
@@ -146,7 +148,8 @@ export function buildAssistant() {
     hooks: [
       {
         on: "customer.speech.timeout",
-        options: { timeoutSeconds: 10, triggerMaxCount: 2, triggerResetMode: "onUserSpeech" },
+        // Long enough that it does not talk over a customer who is just starting to answer.
+        options: { timeoutSeconds: 20, triggerMaxCount: 2, triggerResetMode: "onUserSpeech" },
         do: [{ type: "say", exact: "Hello, are you still there?" }],
       },
     ],
