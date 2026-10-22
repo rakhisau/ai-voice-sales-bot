@@ -10,6 +10,9 @@ import { formatDuration } from "@/lib/format";
 // End the call automatically if the customer stays silent this long.
 const SILENCE_LIMIT_MS = 40_000;
 
+const NO_AUDIO_HELP =
+  "The AI couldn't hear your microphone. Open this link directly in Chrome (not inside WhatsApp/LinkedIn), allow microphone access, and close other apps using the mic.";
+
 const PHASE_LABEL = {
   idle: "Ready to call",
   connecting: "Connecting…",
@@ -25,6 +28,7 @@ export default function CallPage() {
   const callIdRef = useRef(null);
   const lastUserActivityRef = useRef(0);
   const liveRef = useRef(false);
+  const lastErrorRef = useRef("");
 
   const [phase, setPhase] = useState("idle");
   const [consent, setConsent] = useState(false);
@@ -94,6 +98,9 @@ export default function CallPage() {
       });
       vapi.on("volume-level", (v) => setVolume(v));
       vapi.on("message", (msg) => {
+        if (msg.type === "status-update" && String(msg.endedReason ?? "").includes("did-not-receive-customer-audio")) {
+          setError(NO_AUDIO_HELP);
+        }
         if (msg.type !== "transcript" || !msg.transcript) return;
         markLive();
         const role = msg.role === "user" ? "user" : "assistant";
@@ -129,7 +136,8 @@ export default function CallPage() {
       vapi.on("error", (e) => {
         console.error("Vapi error", e);
         const text = e?.error?.message || e?.errorMsg || e?.message || "Something went wrong with the call.";
-        setError(typeof text === "string" ? text : JSON.stringify(text));
+        lastErrorRef.current = typeof text === "string" ? text : JSON.stringify(text);
+        setError(lastErrorRef.current);
       });
     })();
 
@@ -162,13 +170,34 @@ export default function CallPage() {
     setSeconds(0);
     callIdRef.current = null;
     liveRef.current = false;
+    lastErrorRef.current = "";
     setPhase("connecting");
+
+    // Check the microphone first so the customer gets a clear message instead of a silent failure.
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError("This browser can't use the microphone. Open the link directly in Chrome or Safari, not inside WhatsApp, LinkedIn or Instagram.");
+      setPhase("error");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((t) => t.stop());
+    } catch (e) {
+      setError(
+        e?.name === "NotAllowedError"
+          ? "Microphone permission is blocked. Tap the lock icon next to the website address → Permissions → allow Microphone, then press Start Call again."
+          : `Microphone not available (${e?.message || e?.name}). Close other apps using the mic and try again.`
+      );
+      setPhase("error");
+      return;
+    }
+
     try {
       const call = await vapiRef.current.start(buildAssistant());
-      if (!call) throw new Error("Could not start the call. Check your Vapi public key and microphone permission.");
+      if (!call) throw new Error(lastErrorRef.current || "Could not start the call. Please check your internet connection and try again.");
       callIdRef.current = call.id;
     } catch (e) {
-      setError(e?.message || "Could not start the call.");
+      setError(lastErrorRef.current || e?.message || "Could not start the call.");
       setPhase("error");
     }
   }

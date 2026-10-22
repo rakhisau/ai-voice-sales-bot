@@ -20,9 +20,10 @@ function isOurCall(call) {
 }
 
 export function normalizeCall(call) {
-  const rawMessages = call.artifact?.messages ?? call.messages ?? [];
+  // In-progress calls can return messages in other shapes, so only trust real arrays.
+  const rawMessages = [call.artifact?.messages, call.messages].find(Array.isArray) ?? [];
   const transcript = rawMessages
-    .filter((m) => (m.role === "bot" || m.role === "user") && m.message)
+    .filter((m) => (m?.role === "bot" || m?.role === "user") && typeof m.message === "string" && m.message)
     .map((m) => ({
       role: m.role === "bot" ? "assistant" : "user",
       text: m.message,
@@ -62,7 +63,15 @@ export function normalizeCall(call) {
 
 export async function listCalls() {
   const calls = await vapiGet("/call?limit=100");
-  return calls.filter(isOurCall).map(normalizeCall);
+  // Skip a single malformed call instead of failing the whole history page.
+  return calls.filter(isOurCall).flatMap((call) => {
+    try {
+      return [normalizeCall(call)];
+    } catch (err) {
+      console.error("Skipping call", call.id, err);
+      return [];
+    }
+  });
 }
 
 export async function getCall(id) {
