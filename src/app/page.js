@@ -188,124 +188,192 @@ export default function CallPage() {
   let statusText = PHASE_LABEL[phase];
   if (phase === "active") statusText = botSpeaking ? "AI is speaking" : "Listening to customer";
 
+  const orbActive = phase === "active";
+  const dotColor =
+    phase === "active" ? "bg-emerald-400" : inCall || phase === "processing" ? "bg-amber-400" : phase === "error" ? "bg-rose-500" : "bg-slate-500";
+
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 lg:grid-cols-[340px_1fr]">
-        {/* Left: product + call controls */}
-        <aside className="space-y-4">
-          <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">Product being sold</p>
-            <h1 className="mt-1 text-xl font-bold">{PRODUCT.name}</h1>
-            <p className="mt-1 text-sm text-slate-500">{PRODUCT.tagline}</p>
-            <ul className="mt-3 flex flex-wrap gap-1.5">
-              {PRODUCT.features.map((f) => (
-                <li key={f} className="rounded-md bg-slate-100 px-2 py-1 text-xs text-slate-600">
-                  {f}
-                </li>
-              ))}
-            </ul>
-            <div className="mt-3 space-y-0.5 text-xs text-slate-500">
-              {PRODUCT.plans.map((p) => (
-                <p key={p.name}>
-                  <span className="font-medium text-slate-700">{p.name}:</span> {p.price}
-                </p>
-              ))}
-              <p className="pt-1 text-emerald-700">{PRODUCT.trial}</p>
-            </div>
-          </section>
+      {/* Hero */}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-indigo-200 ring-1 ring-white/10">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" /> AI sales agent online 24/7
+          </p>
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
+            Talk to our <span className="gradient-text">AI Sales Agent</span>
+          </h1>
+          <p className="mt-2 max-w-xl text-sm text-slate-400">
+            A real-time voice conversation. Ask anything about {PRODUCT.name}, raise your doubts, and get a demo or free trial in minutes.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 text-xs">
+          {["🎙️ Real-time voice", "💬 Live transcript", "✨ AI summary", "🔒 Consent-based recording"].map((f) => (
+            <span key={f} className="rounded-full bg-white/5 px-3 py-1.5 text-slate-300 ring-1 ring-white/10">
+              {f}
+            </span>
+          ))}
+        </div>
+      </div>
 
-          <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span
-                  className={`h-2.5 w-2.5 rounded-full ${
-                    phase === "active" ? "animate-pulse bg-emerald-500" : inCall ? "bg-amber-400" : phase === "error" ? "bg-rose-500" : "bg-slate-300"
-                  }`}
-                />
-                <span className="text-sm font-medium text-slate-700">{statusText}</span>
-              </div>
-              <span className="font-mono text-2xl font-semibold tabular-nums text-slate-800">{formatDuration(seconds)}</span>
-            </div>
+      <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
+        {/* Left: call controls + product */}
+        <aside className="space-y-5">
+          <section className="glass relative overflow-hidden rounded-3xl p-6">
+            <div className="pointer-events-none absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-violet-600/30 blur-3xl" />
 
-            {/* Simple voice activity meter */}
-            <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-slate-100">
+            {/* AI orb */}
+            <div className="relative mx-auto grid h-40 w-40 place-items-center">
+              {orbActive && (
+                <>
+                  <span className="orb-ring absolute inset-3 rounded-full bg-indigo-500/40" />
+                  <span className="orb-ring orb-ring-delay absolute inset-3 rounded-full bg-fuchsia-500/35" />
+                </>
+              )}
               <div
-                className="h-full rounded-full bg-indigo-500 transition-[width] duration-100"
-                style={{ width: `${Math.min(100, Math.round(volume * 100))}%` }}
-              />
+                className={`relative grid h-32 w-32 place-items-center rounded-full bg-linear-to-br from-indigo-500 via-violet-500 to-fuchsia-500 transition-transform duration-100 ${
+                  orbActive ? "shadow-[0_0_70px_-6px_rgba(168,85,247,0.9)]" : "opacity-80 shadow-[0_0_40px_-12px_rgba(168,85,247,0.8)]"
+                } ${phase === "connecting" ? "animate-pulse" : ""}`}
+                style={{ transform: `scale(${1 + Math.min(volume, 1) * 0.18})` }}
+              >
+                {botSpeaking ? (
+                  <div className="flex h-10 items-end gap-1">
+                    {[0, 0.15, 0.3, 0.45, 0.6].map((d) => (
+                      <span key={d} className="eq-bar h-10 w-1.5 rounded-full bg-white" style={{ animationDelay: `${d}s` }} />
+                    ))}
+                  </div>
+                ) : (
+                  <svg viewBox="0 0 24 24" className="h-12 w-12 fill-white" aria-hidden="true">
+                    <path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z" />
+                  </svg>
+                )}
+              </div>
             </div>
 
-            <label className="mt-4 flex items-start gap-2 text-sm text-slate-600">
+            <div className="relative mt-3 text-center">
+              <p className="font-semibold">Alex · AI Sales Agent</p>
+              <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-slate-300 ring-1 ring-white/10">
+                <span className={`h-2 w-2 rounded-full ${dotColor} ${orbActive ? "animate-pulse" : ""}`} />
+                {statusText}
+              </p>
+              <p className="mt-4 font-mono text-5xl font-bold tabular-nums tracking-tight">
+                <span className={orbActive ? "gradient-text" : "text-slate-300"}>{formatDuration(seconds)}</span>
+              </p>
+              <p className="text-[11px] uppercase tracking-widest text-slate-500">Call duration</p>
+            </div>
+
+            <label
+              className={`relative mt-5 flex cursor-pointer items-start gap-3 rounded-2xl p-3 text-xs leading-relaxed ring-1 transition ${
+                consent ? "bg-emerald-500/10 text-emerald-100 ring-emerald-400/40" : "bg-white/5 text-slate-300 ring-white/10 hover:ring-white/20"
+              }`}
+            >
               <input
                 type="checkbox"
-                className="mt-0.5 h-4 w-4 accent-indigo-600"
+                className="mt-0.5 h-4 w-4 shrink-0 accent-emerald-500"
                 checked={consent}
                 disabled={inCall}
                 onChange={(e) => setConsent(e.target.checked)}
               />
-              <span>I agree that this call will be recorded and transcribed for quality, training and summary purposes.</span>
+              <span>
+                <span className="font-semibold">🔒 Recording consent:</span> I agree that this call will be recorded and transcribed for
+                quality, training and summary purposes.
+              </span>
             </label>
 
-            <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="relative mt-4 grid grid-cols-2 gap-3">
               <button
                 onClick={startCall}
                 disabled={!consent || inCall || phase === "processing"}
-                className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                className="flex items-center justify-center gap-2 rounded-2xl bg-linear-to-r from-emerald-500 to-teal-500 px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/30 transition hover:scale-[1.02] hover:shadow-emerald-500/50 disabled:scale-100 disabled:cursor-not-allowed disabled:from-white/10 disabled:to-white/10 disabled:text-slate-500 disabled:shadow-none"
               >
-                Start Call
+                📞 Start Call
               </button>
               <button
                 onClick={endCall}
                 disabled={!inCall || phase === "ending"}
-                className="rounded-xl bg-rose-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                className="flex items-center justify-center gap-2 rounded-2xl bg-linear-to-r from-rose-500 to-pink-600 px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-rose-500/30 transition hover:scale-[1.02] hover:shadow-rose-500/50 disabled:scale-100 disabled:cursor-not-allowed disabled:from-white/10 disabled:to-white/10 disabled:text-slate-500 disabled:shadow-none"
               >
-                End Call
+                ⏹ End Call
               </button>
             </div>
             {!consent && !inCall && (
-              <p className="mt-2 text-xs text-slate-400">Tick the consent box to enable the call.</p>
+              <p className="relative mt-2 text-center text-[11px] text-slate-500">Tick the consent box to enable the call.</p>
             )}
-            {error && <p className="mt-3 rounded-lg bg-rose-50 p-2 text-xs text-rose-700">{error}</p>}
+            {error && <p className="relative mt-3 rounded-xl bg-rose-500/10 p-3 text-xs text-rose-300 ring-1 ring-rose-500/30">{error}</p>}
           </section>
 
-          <section className="rounded-2xl bg-white p-5 text-xs leading-relaxed text-slate-500 shadow-sm ring-1 ring-slate-200">
-            <p className="font-semibold text-slate-700">Try saying</p>
-            <p className="mt-1">&ldquo;Yes, tell me more. We are a 10-person real estate team using Excel.&rdquo;</p>
-            <p>&ldquo;That sounds expensive.&rdquo; · &ldquo;Can I see a demo on Friday?&rdquo;</p>
-            <p className="mt-2">Use Chrome or Edge and allow microphone access.</p>
+          <section className="glass rounded-3xl p-5">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-fuchsia-300">Product being sold</p>
+            <h2 className="mt-1 text-xl font-bold">{PRODUCT.name}</h2>
+            <p className="mt-1 text-sm text-slate-400">{PRODUCT.tagline}</p>
+            <ul className="mt-3 flex flex-wrap gap-1.5">
+              {PRODUCT.features.map((f) => (
+                <li key={f} className="rounded-lg bg-indigo-500/10 px-2 py-1 text-xs text-indigo-200 ring-1 ring-indigo-400/20">
+                  {f}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              {PRODUCT.plans.map((p) => (
+                <div key={p.name} className="rounded-xl bg-white/5 p-2 text-center ring-1 ring-white/10">
+                  <p className="text-[11px] text-slate-400">{p.name}</p>
+                  <p className="mt-0.5 text-xs font-semibold">{p.price.replace(" / user / month", "")}</p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 rounded-lg bg-emerald-500/10 px-3 py-2 text-center text-xs font-medium text-emerald-300 ring-1 ring-emerald-400/20">
+              🎁 {PRODUCT.trial}
+            </p>
+          </section>
+
+          <section className="glass rounded-3xl p-5 text-xs leading-relaxed text-slate-400">
+            <p className="font-semibold text-slate-200">💡 Try saying</p>
+            <p className="mt-2">&ldquo;We are a 10-person real estate team using Excel.&rdquo;</p>
+            <p>&ldquo;That sounds expensive.&rdquo;</p>
+            <p>&ldquo;Can I see a demo on Friday?&rdquo;</p>
+            <p className="mt-2 text-slate-500">Use Chrome or Edge and allow microphone access.</p>
           </section>
         </aside>
 
         {/* Right: live chat */}
-        <section className="flex min-h-[520px] flex-col rounded-2xl bg-slate-50 shadow-sm ring-1 ring-slate-200">
-          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-            <h2 className="text-sm font-semibold text-slate-700">Live conversation</h2>
-            {phase === "active" && (
-              <span className="flex items-center gap-1.5 text-xs font-medium text-rose-600">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-rose-600" /> REC
+        <section className="glass flex min-h-[560px] flex-col overflow-hidden rounded-3xl">
+          <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+            <div>
+              <h2 className="font-semibold">Live conversation</h2>
+              <p className="text-xs text-slate-500">Speech is transcribed in real time</p>
+            </div>
+            {orbActive ? (
+              <span className="flex items-center gap-1.5 rounded-full bg-rose-500/15 px-3 py-1 text-xs font-bold text-rose-300 ring-1 ring-rose-400/40">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-rose-500" /> REC
+              </span>
+            ) : (
+              <span className="rounded-full bg-white/5 px-3 py-1 text-xs text-slate-400 ring-1 ring-white/10">
+                {messages.length} messages
               </span>
             )}
           </div>
           <Transcript
             messages={liveMessages}
-            emptyText="Press Start Call — the AI sales agent will greet you and the conversation will appear here in real time."
-            className="h-[460px] flex-1 lg:h-auto lg:max-h-[640px]"
+            emptyText="Press Start Call. Alex will greet you and the whole conversation will appear here in real time."
+            className="h-[480px] flex-1 lg:h-auto lg:max-h-[760px]"
           />
         </section>
       </div>
 
       {(phase === "processing" || phase === "done") && (
-        <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Call result</h2>
-            <Link href="/history" className="text-sm font-medium text-indigo-600 hover:underline">
+        <section className="fade-up space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-2xl font-bold">
+              Call <span className="gradient-text">result</span>
+            </h2>
+            <Link href="/history" className="text-sm font-medium text-indigo-300 hover:text-indigo-200">
               View all calls →
             </Link>
           </div>
           {phase === "processing" && (
-            <p className="mb-4 flex items-center gap-2 text-sm text-slate-500">
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
-              Saving recording and generating AI summary… this takes a few seconds.
+            <p className="glass flex items-center gap-3 rounded-2xl p-4 text-sm text-slate-300">
+              <span className="h-5 w-5 animate-spin rounded-full border-2 border-fuchsia-400 border-t-transparent" />
+              Saving the recording and generating the AI summary… this takes a few seconds.
             </p>
           )}
           {result && <CallDetail call={result} />}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import StatusBadge from "@/components/StatusBadge";
+import StatusBadge, { STATUS_STYLES } from "@/components/StatusBadge";
 import { SALES_STATUSES } from "@/lib/salesConfig";
 import { formatDate, formatDuration } from "@/lib/format";
 
@@ -58,22 +58,26 @@ export default function HistoryPage() {
 
   if (needLogin) {
     return (
-      <div className="mx-auto mt-10 max-w-sm rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <h1 className="text-xl font-bold">Sales team login</h1>
-        <p className="mt-1 text-sm text-slate-500">
+      <div className="glass relative mx-auto mt-10 max-w-sm overflow-hidden rounded-3xl p-7">
+        <div className="pointer-events-none absolute -top-20 left-1/2 h-40 w-40 -translate-x-1/2 rounded-full bg-indigo-600/30 blur-3xl" />
+        <span className="relative grid h-12 w-12 place-items-center rounded-2xl bg-linear-to-br from-indigo-500 to-fuchsia-500 text-xl shadow-[0_0_30px_-6px_rgba(168,85,247,0.9)]">
+          🔒
+        </span>
+        <h1 className="relative mt-4 text-xl font-bold">Sales team login</h1>
+        <p className="relative mt-1 text-sm text-slate-400">
           Call history contains customer recordings and is only visible to the sales team.
         </p>
-        <form onSubmit={login} className="mt-4 space-y-3">
+        <form onSubmit={login} className="relative mt-5 space-y-3">
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Admin password"
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+            className="w-full rounded-xl bg-white/5 px-4 py-2.5 text-sm text-white ring-1 ring-white/15 outline-none placeholder:text-slate-500 focus:ring-indigo-400"
             autoFocus
           />
-          {loginError && <p className="text-sm text-rose-600">{loginError}</p>}
-          <button className="w-full rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
+          {loginError && <p className="text-sm text-rose-400">{loginError}</p>}
+          <button className="w-full rounded-xl bg-linear-to-r from-indigo-500 to-violet-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/30 transition hover:shadow-indigo-500/50">
             Log in
           </button>
         </form>
@@ -84,21 +88,53 @@ export default function HistoryPage() {
   const shown = (calls ?? []).filter((c) => filter === "All" || c.salesStatus === filter);
   const counts = Object.fromEntries(SALES_STATUSES.map((s) => [s, (calls ?? []).filter((c) => c.salesStatus === s).length]));
 
+  const all = calls ?? [];
+  const won = counts["Converted"] + counts["Demo Requested"];
+  const avgDuration = all.length ? Math.round(all.reduce((sum, c) => sum + c.durationSec, 0) / all.length) : 0;
+  const stats = [
+    { label: "Total calls", value: all.length, icon: "📞", glow: "from-indigo-500/25" },
+    { label: "Converted", value: counts["Converted"], icon: "🎉", glow: "from-emerald-500/25" },
+    { label: "Demos booked", value: counts["Demo Requested"], icon: "📅", glow: "from-violet-500/25" },
+    {
+      label: "Win rate",
+      value: all.length ? `${Math.round((won / all.length) * 100)}%` : "—",
+      icon: "📈",
+      glow: "from-fuchsia-500/25",
+    },
+    { label: "Avg duration", value: formatDuration(avgDuration), icon: "⏱️", glow: "from-cyan-500/25" },
+  ];
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Call History</h1>
-          <p className="text-sm text-slate-500">Every call with its recording, transcript, AI summary and sales status.</p>
+          <h1 className="text-3xl font-extrabold tracking-tight">
+            Call <span className="gradient-text">History</span>
+          </h1>
+          <p className="mt-1 text-sm text-slate-400">Every call with its recording, transcript, AI summary and sales status.</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={logout} className="rounded-xl px-4 py-2 text-sm font-medium text-slate-600 ring-1 ring-slate-300 hover:bg-white">
+          <button onClick={logout} className="rounded-xl px-4 py-2 text-sm font-medium text-slate-300 ring-1 ring-white/15 hover:bg-white/5">
             Log out
           </button>
-          <Link href="/" className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">
+          <Link
+            href="/"
+            className="rounded-xl bg-linear-to-r from-emerald-500 to-teal-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-emerald-500/30 transition hover:shadow-emerald-500/50"
+          >
             + New call
           </Link>
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {stats.map((s) => (
+          <div key={s.label} className={`glass rounded-2xl bg-linear-to-br ${s.glow} to-transparent p-4`}>
+            <p className="flex items-center justify-between text-xs text-slate-400">
+              {s.label} <span>{s.icon}</span>
+            </p>
+            <p className="mt-2 text-2xl font-bold tabular-nums">{s.value}</p>
+          </div>
+        ))}
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -106,35 +142,42 @@ export default function HistoryPage() {
           <button
             key={s}
             onClick={() => setFilter(s)}
-            className={`rounded-full px-3 py-1 text-xs font-medium ring-1 ${
-              filter === s ? "bg-slate-900 text-white ring-slate-900" : "bg-white text-slate-600 ring-slate-200 hover:bg-slate-50"
+            className={`rounded-full px-3 py-1.5 text-xs font-medium ring-1 transition ${
+              filter === s
+                ? "bg-linear-to-r from-indigo-500 to-violet-500 text-white ring-transparent shadow-lg shadow-indigo-500/30"
+                : "bg-white/5 text-slate-300 ring-white/10 hover:bg-white/10"
             }`}
           >
-            {s} {s === "All" ? `(${calls?.length ?? 0})` : `(${counts[s] ?? 0})`}
+            {s !== "All" && `${STATUS_STYLES[s].icon} `}
+            {s} <span className="opacity-70">({s === "All" ? all.length : counts[s] ?? 0})</span>
           </button>
         ))}
       </div>
 
-      {error && <p className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
-      {calls === null && !error && <p className="text-sm text-slate-500">Loading calls…</p>}
-      {calls && shown.length === 0 && <p className="text-sm text-slate-500">No calls yet.</p>}
+      {error && <p className="rounded-xl bg-rose-500/10 p-3 text-sm text-rose-300 ring-1 ring-rose-500/30">{error}</p>}
+      {calls === null && !error && <p className="text-sm text-slate-400">Loading calls…</p>}
+      {calls && shown.length === 0 && (
+        <div className="glass rounded-2xl p-10 text-center text-sm text-slate-400">No calls here yet.</div>
+      )}
 
       <div className="space-y-3">
         {shown.map((c) => (
           <Link
             key={c.id}
             href={`/history/${c.id}`}
-            className="block rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition hover:ring-indigo-300"
+            className="glass group relative block overflow-hidden rounded-2xl p-4 pl-6 transition hover:-translate-y-0.5 hover:bg-white/[0.07] hover:shadow-xl hover:shadow-indigo-500/10"
           >
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+            <span className={`absolute inset-y-0 left-0 w-1.5 ${STATUS_STYLES[c.salesStatus]?.bar ?? "bg-slate-600"}`} />
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
               <StatusBadge status={c.salesStatus} />
-              <span className="font-medium text-slate-800">{c.customerName || "Customer"}</span>
-              <span className="text-slate-500">{formatDate(c.startedAt || c.createdAt)}</span>
-              <span className="text-slate-500">{formatDuration(c.durationSec)}</span>
-              <span className="text-slate-400">{c.transcript.length} messages</span>
-              {c.recordingUrl && <span className="text-slate-400">🎧 Recording</span>}
+              <span className="font-semibold">{c.customerName || "Customer"}</span>
+              <span className="text-slate-400">{formatDate(c.startedAt || c.createdAt)}</span>
+              <span className="font-mono text-slate-400">⏱ {formatDuration(c.durationSec)}</span>
+              <span className="text-slate-500">💬 {c.transcript.length}</span>
+              {c.recordingUrl && <span className="text-slate-500">🎧 Recording</span>}
+              <span className="ml-auto text-indigo-300 opacity-0 transition group-hover:opacity-100">Open →</span>
             </div>
-            <p className="mt-2 line-clamp-2 text-sm text-slate-600">{c.summary || "No summary available."}</p>
+            <p className="mt-2 line-clamp-2 text-sm text-slate-300">{c.summary || "No summary available."}</p>
           </Link>
         ))}
       </div>
