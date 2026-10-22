@@ -126,14 +126,13 @@ export function buildAssistant() {
       messages: [{ role: "system", content: SYSTEM_PROMPT }],
       tools: [{ type: "endCall" }],
     },
-    voice: { provider: "vapi", voiceId: "Elliot" },
-    // nova-3 handles Indian English accents better; keyterms boost words that were being misheard.
+    voice: { provider: "vapi", voiceId: "Emma", version: "2", language: "auto" },
+    // Soniox auto-detects the language (good for Indian English / Hinglish); the vocabulary
+    // boosts words that were being misheard.
     transcriber: {
-      provider: "deepgram",
-      model: "nova-3",
-      language: "en",
-      smartFormat: true,
-      keyterm: ["FlowDesk", "Gmail", "at the rate", "dot com", "CRM", "WhatsApp", "demo", "free trial"],
+      provider: "soniox",
+      model: "stt-rt-v5",
+      customVocabulary: ["FlowDesk", "Gmail", "at the rate", "dot com", "CRM", "WhatsApp", "demo", "free trial"],
     },
     // Wait for the customer to actually finish their sentence before replying.
     startSpeakingPlan: {
