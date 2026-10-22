@@ -61,7 +61,7 @@ export default function CallDetail({ call }) {
 
       <Card icon="🎧" title="Call recording" accent="bg-cyan-500/15">
         {call.recordingUrl ? (
-          <audio controls preload="none" src={call.recordingUrl} className="w-full [color-scheme:dark]" />
+          <audio controls preload="metadata" src={call.recordingUrl} className="w-full [color-scheme:dark]" />
         ) : (
           <p className="text-sm text-slate-500">Recording is not available yet.</p>
         )}

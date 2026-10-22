@@ -49,7 +49,8 @@ export function normalizeCall(call) {
     durationSec: started && ended ? Math.max(0, Math.round((ended - started) / 1000)) : 0,
     callStatus: call.status,
     endedReason: call.endedReason ?? null,
-    recordingUrl: call.artifact?.recordingUrl ?? call.recordingUrl ?? null,
+    // Vapi recordings are private; our route swaps in a fresh signed URL on each play.
+    recordingUrl: call.artifact?.recordingUrl || call.recordingUrl ? `/api/calls/${call.id}/recording` : null,
     transcript,
     customerName: data.customerName || "",
     summary: data.summary || call.analysis?.summary || "",
@@ -74,9 +75,19 @@ export async function listCalls() {
   });
 }
 
-export async function getCall(id) {
+async function getRawCall(id) {
   if (!ID_PATTERN.test(id)) throw new Error("Invalid call id");
   const call = await vapiGet(`/call/${id}`);
   if (!isOurCall(call)) throw new Error("Call not found");
-  return normalizeCall(call);
+  return call;
+}
+
+export async function getCall(id) {
+  return normalizeCall(await getRawCall(id));
+}
+
+// Signed links expire after about an hour, so fetch a fresh one every time.
+export async function getRecordingUrl(id) {
+  const call = await getRawCall(id);
+  return call.artifact?.presignedMonoUrl ?? null;
 }
