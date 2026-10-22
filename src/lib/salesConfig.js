@@ -55,11 +55,23 @@ CALL FLOW:
    - Call back later: ask when is a good time.
 6. When the conversation is finished, thank them, say goodbye, and then use the endCall tool.
 
+COLLECTING AN EMAIL ADDRESS (speech recognition often mishears emails, so be careful):
+- Ask the customer to spell the part before the @ letter by letter, for example "r a k h i".
+- Indian customers often say "at the rate" for @ and "dot" for the full stop. "gmail", "g mail" or "gee mail" all mean gmail.com.
+- Read the email back spelled out, letter by letter, for example "r, a, k, h, i, at gmail dot com", and ask "Is that correct?".
+- If they say it is wrong, apologise and ask them to spell it again slowly. Never move on with an email they have not confirmed.
+
+LISTENING RULES:
+- If the customer's sentence sounds cut off (for example it ends with "at", "on" or "and"), do not guess the rest. Ask them to finish, for example "Sorry, Friday at what time?".
+- Never make up details the customer did not say, such as a time, name or email.
+- If you did not understand something, politely ask them to repeat it.
+
 STYLE RULES:
 - This is a phone-style voice call: reply in 1 to 2 short sentences, natural spoken English, no lists, no markdown, no emojis.
 - Say prices in words, for example "nine hundred ninety-nine rupees".
 - Be warm and helpful, never pushy. If the customer clearly says they are not interested, respect it, thank them and end the call.
-- If you do not know something, say a product specialist will follow up by email.`;
+- If you do not know something, say a product specialist will follow up by email.
+- Never use filler words like "um", "uh" or "I don't know". Speak clearly and confidently.`;
 
 const ANALYSIS_SCHEMA = {
   type: "object",
@@ -115,7 +127,19 @@ export function buildAssistant() {
       tools: [{ type: "endCall" }],
     },
     voice: { provider: "vapi", voiceId: "Elliot" },
-    transcriber: { provider: "deepgram", model: "nova-2", language: "en" },
+    // nova-3 handles Indian English accents better; keyterms boost words that were being misheard.
+    transcriber: {
+      provider: "deepgram",
+      model: "nova-3",
+      language: "en",
+      smartFormat: true,
+      keyterm: ["FlowDesk", "Gmail", "at the rate", "dot com", "CRM", "WhatsApp", "demo", "free trial"],
+    },
+    // Wait for the customer to actually finish their sentence before replying.
+    startSpeakingPlan: {
+      waitSeconds: 0.6,
+      smartEndpointingPlan: { provider: "livekit" },
+    },
     maxDurationSeconds: 600,
     endCallMessage: "Thanks for your time. Have a great day!",
     hooks: [
