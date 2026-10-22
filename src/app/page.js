@@ -13,6 +13,9 @@ const SILENCE_LIMIT_MS = 40_000;
 const NO_AUDIO_HELP =
   "The AI couldn't hear your microphone. Open this link directly in Chrome (not inside WhatsApp/LinkedIn), allow microphone access, and close other apps using the mic.";
 
+// Mic level (0–1) above which we treat it as the customer speaking.
+const MIC_SPEECH_LEVEL = 0.02;
+
 const PHASE_LABEL = {
   idle: "Ready to call",
   connecting: "Connecting…",
@@ -29,6 +32,7 @@ export default function CallPage() {
   const lastUserActivityRef = useRef(0);
   const liveRef = useRef(false);
   const lastErrorRef = useRef("");
+  const micHeardRef = useRef(false);
 
   const [phase, setPhase] = useState("idle");
   const [consent, setConsent] = useState(false);
@@ -36,6 +40,8 @@ export default function CallPage() {
   const [partials, setPartials] = useState({ assistant: "", user: "" });
   const [botSpeaking, setBotSpeaking] = useState(false);
   const [volume, setVolume] = useState(0);
+  const [micLevel, setMicLevel] = useState(0);
+  const [micHeard, setMicHeard] = useState(false);
   const [startedAt, setStartedAt] = useState(null);
   const [seconds, setSeconds] = useState(0);
   const [result, setResult] = useState(null);
@@ -87,7 +93,18 @@ export default function CallPage() {
         lastUserActivityRef.current = Date.now();
       };
 
-      vapi.on("call-start", markLive);
+      vapi.on("call-start", () => {
+        markLive();
+        // Krisp noise cancellation can strip out a quiet or low-quality mic; send the raw mic instead.
+        vapi.getDailyCallObject()?.updateInputSettings({ audio: { processor: { type: "none" } } }).catch(() => {});
+      });
+      vapi.on("local-volume-level", (v) => {
+        setMicLevel(v);
+        if (v > MIC_SPEECH_LEVEL && !micHeardRef.current) {
+          micHeardRef.current = true;
+          setMicHeard(true);
+        }
+      });
       vapi.on("speech-start", () => {
         markLive();
         setBotSpeaking(true);
@@ -124,6 +141,7 @@ export default function CallPage() {
         liveRef.current = false;
         setBotSpeaking(false);
         setVolume(0);
+        setMicLevel(0);
         setPartials({ assistant: "", user: "" });
         setStartedAt(null);
         if (callIdRef.current) {
@@ -171,6 +189,8 @@ export default function CallPage() {
     callIdRef.current = null;
     liveRef.current = false;
     lastErrorRef.current = "";
+    micHeardRef.current = false;
+    setMicHeard(false);
     setPhase("connecting");
 
     // Check the microphone first so the customer gets a clear message instead of a silent failure.
@@ -221,6 +241,7 @@ export default function CallPage() {
   if (phase === "active") statusText = botSpeaking ? "AI is speaking" : "Listening to customer";
 
   const orbActive = phase === "active";
+  const micSilent = orbActive && seconds >= 12 && !micHeard;
   const dotColor =
     phase === "active" ? "bg-emerald-400" : inCall || phase === "processing" ? "bg-amber-400" : phase === "error" ? "bg-rose-500" : "bg-slate-500";
 
@@ -293,6 +314,29 @@ export default function CallPage() {
               </p>
               <p className="text-[11px] uppercase tracking-widest text-slate-500">Call duration</p>
             </div>
+
+            {inCall && (
+              <div className="relative mt-4">
+                <div className="flex items-center justify-between text-[11px] text-slate-400">
+                  <span>🎙️ Your mic</span>
+                  <span className={micLevel > MIC_SPEECH_LEVEL ? "text-emerald-300" : ""}>
+                    {micLevel > MIC_SPEECH_LEVEL ? "Hearing you" : "Silent"}
+                  </span>
+                </div>
+                <div className="mt-1 h-2 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-linear-to-r from-emerald-400 to-cyan-400 transition-[width] duration-100"
+                    style={{ width: `${Math.min(100, Math.round(micLevel * 250))}%` }}
+                  />
+                </div>
+                {micSilent && (
+                  <p className="mt-2 rounded-lg bg-amber-500/10 p-2 text-[11px] leading-relaxed text-amber-300 ring-1 ring-amber-400/30">
+                    We can&apos;t hear your microphone. Check the right mic is selected in Windows Sound settings → Input and is not muted, then
+                    speak a little louder.
+                  </p>
+                )}
+              </div>
+            )}
 
             <label
               className={`relative mt-5 flex cursor-pointer items-start gap-3 rounded-2xl p-3 text-xs leading-relaxed ring-1 transition ${
