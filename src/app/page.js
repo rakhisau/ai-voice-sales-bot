@@ -183,11 +183,14 @@ export default function CallPage() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.getTracks().forEach((t) => t.stop());
     } catch (e) {
-      setError(
-        e?.name === "NotAllowedError"
-          ? "Microphone permission is blocked. Tap the lock icon next to the website address → Permissions → allow Microphone, then press Start Call again."
-          : `Microphone not available (${e?.message || e?.name}). Close other apps using the mic and try again.`
-      );
+      const micHelp = {
+        NotAllowedError:
+          "Microphone permission is blocked. Tap the lock icon next to the website address → Permissions → allow Microphone, then press Start Call again.",
+        NotFoundError:
+          "No microphone found on this device. Plug in a mic (or check Windows Sound settings → Input), then restart the browser and try again.",
+        NotReadableError: "The microphone is being used by another app. Close that app and try again.",
+      };
+      setError(micHelp[e?.name] ?? `Microphone not available (${e?.message || e?.name}).`);
       setPhase("error");
       return;
     }
