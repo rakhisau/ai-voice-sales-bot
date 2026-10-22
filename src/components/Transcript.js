@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { AGENT_NAME } from "@/lib/salesConfig";
 
 // messages: [{ role: "assistant" | "user", text, pending? }]
 export default function Transcript({ messages, emptyText = "No messages yet.", className = "" }) {
@@ -33,7 +34,7 @@ export default function Transcript({ messages, emptyText = "No messages yet.", c
               {isBot ? "AI" : "You"}
             </span>
             <div className={`max-w-[80%] ${isBot ? "" : "text-right"}`}>
-              <p className="mb-1 text-[11px] font-medium text-slate-500">{isBot ? "Alex · AI Sales Agent" : "Customer"}</p>
+              <p className="mb-1 text-[11px] font-medium text-slate-500">{isBot ? `${AGENT_NAME} · AI Sales Agent` : "Customer"}</p>
               <div
                 className={`inline-block rounded-2xl px-4 py-2.5 text-left text-sm leading-relaxed ${
                   isBot

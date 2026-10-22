@@ -1,6 +1,8 @@
 // Everything about the product and the AI sales agent lives here.
 // Change PRODUCT / SYSTEM_PROMPT to sell a different SaaS product.
 
+// The agent's spoken name; change it here and it updates everywhere.
+export const AGENT_NAME = "Riley";
 export const ASSISTANT_NAME = "FlowDesk Sales Agent";
 export const APP_TAG = "flowdesk-sales-bot";
 
@@ -32,7 +34,7 @@ export const PRODUCT = {
   trial: "14-day free trial, no credit card",
 };
 
-const SYSTEM_PROMPT = `You are Alex, a friendly and confident sales representative for FlowDesk CRM, speaking on a live voice call.
+const SYSTEM_PROMPT = `You are ${AGENT_NAME}, a friendly and confident sales representative for FlowDesk CRM, speaking on a live voice call.
 
 PRODUCT FACTS (never invent anything beyond these):
 - FlowDesk CRM is a simple CRM for small and growing businesses in India.
@@ -118,7 +120,7 @@ export function buildAssistant() {
     name: ASSISTANT_NAME,
     metadata: { app: APP_TAG },
     firstMessage:
-      "Hi, this is Alex from FlowDesk CRM. Just so you know, this call is recorded for quality and training. Do you have two minutes to hear how we help businesses close more deals?",
+      `Hi, this is ${AGENT_NAME} from FlowDesk CRM. Just so you know, this call is recorded for quality and training. Do you have two minutes to hear how we help businesses close more deals?`,
     model: {
       provider: "openai",
       model: "gpt-4o-mini",

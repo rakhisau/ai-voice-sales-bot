@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Transcript from "@/components/Transcript";
 import CallDetail from "@/components/CallDetail";
-import { PRODUCT, buildAssistant } from "@/lib/salesConfig";
+import { AGENT_NAME, PRODUCT, buildAssistant } from "@/lib/salesConfig";
 import { formatDuration } from "@/lib/format";
 
 // End the call automatically if the customer stays silent this long.
@@ -280,7 +280,7 @@ export default function CallPage() {
             </div>
 
             <div className="relative mt-3 text-center">
-              <p className="font-semibold">Alex · AI Sales Agent</p>
+              <p className="font-semibold">{AGENT_NAME} · AI Sales Agent</p>
               <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-slate-300 ring-1 ring-white/10">
                 <span className={`h-2 w-2 rounded-full ${dotColor} ${orbActive ? "animate-pulse" : ""}`} />
                 {statusText}
@@ -383,7 +383,7 @@ export default function CallPage() {
           </div>
           <Transcript
             messages={liveMessages}
-            emptyText="Press Start Call. Alex will greet you and the whole conversation will appear here in real time."
+            emptyText={`Press Start Call. ${AGENT_NAME} will greet you and the whole conversation will appear here in real time.`}
             className="h-[480px] flex-1 lg:h-auto lg:max-h-[760px]"
           />
         </section>
